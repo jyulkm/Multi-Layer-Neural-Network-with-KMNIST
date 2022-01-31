@@ -4,6 +4,9 @@
 # Winter 2022
 ################################################################################
 
+# TODO: double check layer class forward function
+# TODO: double check layer class backward function
+
 import numpy as np
 import math
 
@@ -105,11 +108,11 @@ class Activation:
         """
         Compute the gradient for ReLU here.
         """
-        if self.a < 0:
+        if x < 0:
             return 0
-        if self.a > 0:
+        if x > 0:
             return 1
-        if self.a == 0:
+        if x == 0:
             return 0  # following the convention of returning 1 only if x > 0
 
 
@@ -151,17 +154,22 @@ class Layer:
         Do not apply activation here.
         Return self.a
         """
-        raise NotImplementedError(
-            "Forward propagation not implemented for Layer")
+        self.x = x
+        self.a = self.x @ self.w + self.b
 
-    def backward(self, delta):
+        return self.a
+
+    def backward(self, delta, grad_act):
         """
-        Write the code for backward pass. This takes in gradient from its next layer as input,
-        computes gradient for its weights and the delta to pass to its previous layers.
-        Return self.dx
+        Takes the weighted sum of the deltas from the layer above it as input.
+        Computes gradient for its weights and the delta to pass to its previous layers.
+        Return self.d_x
         """
-        raise NotImplementedError(
-            "Backward propagation not implemented for Layer")
+        self.d_w = self.x.T @ delta
+
+        self.d_x = grad_act(self.a) * (self.w @ delta)
+
+        return self.d_x
 
 
 class NeuralNetwork:
