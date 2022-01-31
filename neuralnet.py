@@ -24,17 +24,22 @@ class Activation:
         Initialize activation type and placeholders here.
         """
         if activation_type not in ["sigmoid", "tanh", "ReLU"]:
-            raise NotImplementedError("%s is not implemented." % (activation_type))
+            raise NotImplementedError(
+                "%s is not implemented." % (activation_type))
 
         # Type of non-linear activation.
         self.activation_type = activation_type
         # Placeholder for input. This will be used for computing gradients.
-        self.x = None
+        self.a = None
+        # Placeholder for input dimension.
+        self.n = 0
 
     def __call__(self, a):
         """
         This method allows your instances to be callable.
         """
+        self.a = a
+        self.d = len(a)
         return self.forward(a)
 
     def forward(self, a):
@@ -65,41 +70,47 @@ class Activation:
 
         return grad * delta
 
-    def sigmoid(self, x):
+    def sigmoid(self, a):
         """
         Implement the sigmoid activation here.
         """
         return 1 / (1 + np.exp(-1 * (a)))
 
-    def tanh(self, x):
+    def tanh(self, a):
         """
         Implement tanh here.
         """
-        return np.tanh(x)
+        return np.tanh(a)
 
-    def ReLU(self, x):
+    def ReLU(self, a):
         """
         Implement ReLU here.
+        Takes the max of a_i and 0 for each element i.
         """
-        return max(x, 0)
+        return (a > 0) * a
 
     def grad_sigmoid(self):
         """
         Compute the gradient for sigmoid here.
         """
-        raise NotImplementedError("Sigmoid gradient not implemented")
+        return self.sigmoid(self.a) * (1 - self.sigmoid(self.a))
 
     def grad_tanh(self):
         """
         Compute the gradient for tanh here.
         """
-        raise NotImplementedError("tanh gradient not implemented")
+        return 1 - (self.tanh(self.a))**2
 
     def grad_ReLU(self):
         """
         Compute the gradient for ReLU here.
         """
-        raise NotImplementedError("ReLU gradient not implemented")
+        if self.a < 0:
+            return 0
+        if self.a > 0:
+            return 1
+        if self.a == 0:
+            return 0  # following the convention of returning 1 only if x > 0
 
 
 class Layer:
@@ -121,7 +132,8 @@ class Layer:
                                                            out_units)  # You can experiment with initialization.
         self.b = np.zeros((1, out_units))  # Create a placeholder for Bias
         self.x = None  # Save the input to forward in this
-        self.a = None  # Save the output of forward pass in this (without activation)
+        # Save the output of forward pass in this (without activation)
+        self.a = None
 
         self.d_x = None  # Save the gradient w.r.t x in this
         self.d_w = None  # Save the gradient w.r.t w in this
@@ -139,7 +151,8 @@ class Layer:
         Do not apply activation here.
         Return self.a
         """
-        raise NotImplementedError("Forward propagation not implemented for Layer")
+        raise NotImplementedError(
+            "Forward propagation not implemented for Layer")
 
     def backward(self, delta):
         """
@@ -147,7 +160,8 @@ class Layer:
         computes gradient for its weights and the delta to pass to its previous layers.
         Return self.dx
         """
-        raise NotImplementedError("Backward propagation not implemented for Layer")
+        raise NotImplementedError(
+            "Backward propagation not implemented for Layer")
 
 
 class NeuralNetwork:
@@ -171,7 +185,8 @@ class NeuralNetwork:
 
         # Add layers specified by layer_specs.
         for i in range(len(config['layer_specs']) - 1):
-            self.layers.append(Layer(config['layer_specs'][i], config['layer_specs'][i + 1]))
+            self.layers.append(
+                Layer(config['layer_specs'][i], config['layer_specs'][i + 1]))
             if i < len(config['layer_specs']) - 2:
                 self.layers.append(Activation(config['activation']))
 
@@ -186,14 +201,16 @@ class NeuralNetwork:
         Compute forward pass through all the layers in the network and return it.
         If targets are provided, return loss as well.
         """
-        raise NotImplementedError("Forward propagation not implemented for NeuralNetwork")
+        raise NotImplementedError(
+            "Forward propagation not implemented for NeuralNetwork")
 
     def backward(self):
         """
         Implement backpropagation here.
         Call backward methods of individual layer's.
         """
-        raise NotImplementedError("Backward propagation not implemented for NeuralNetwork")
+        raise NotImplementedError(
+            "Backward propagation not implemented for NeuralNetwork")
 
     def softmax(self, x):
         """
