@@ -165,9 +165,11 @@ class Layer:
         Computes gradient for its weights and the delta to pass to its previous layers.
         Return self.d_x
         """
-        self.d_w = self.x.T @ delta
+        self.d_w = self.x.T @ delta / len(x) # normalizing
 
         self.d_x = grad_act(self.a) * (self.w @ delta)
+        self.d_x = delta * w
+        self.d_b = np.sum(delta, axis=1)
 
         return self.d_x
 
