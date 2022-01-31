@@ -69,19 +69,19 @@ class Activation:
         """
         Implement the sigmoid activation here.
         """
-        raise NotImplementedError("Sigmoid not implemented")
+        return 1 / (1 + np.exp(-1 * (a)))
 
     def tanh(self, x):
         """
         Implement tanh here.
         """
-        raise NotImplementedError("Tanh not implemented")
+        return np.tanh(x)
 
     def ReLU(self, x):
         """
         Implement ReLU here.
         """
-        raise NotImplementedError("ReLU not implemented")
+        return max(x, 0)
 
     def grad_sigmoid(self):
         """
@@ -200,7 +200,7 @@ class NeuralNetwork:
         Implement the softmax function here.
         Remember to take care of the overflow condition.
         """
-        raise NotImplementedError("Softmax not implemented for NeuralNetwork")
+        return np.exp(a) / np.sum(np.exp(a))
 
     def loss(self, logits, targets):
         """
