@@ -9,6 +9,7 @@
 
 import numpy as np
 import math
+import data
 
 
 class Activation:
@@ -60,6 +61,7 @@ class Activation:
 
     def backward(self, delta):
         """
+        Takes in the weighted sum delta. 
         Compute the backward pass.
         """
         if self.activation_type == "sigmoid":
@@ -108,11 +110,11 @@ class Activation:
         """
         Compute the gradient for ReLU here.
         """
-        if x < 0:
+        if self.a < 0:
             return 0
-        if x > 0:
+        if self.a > 0:
             return 1
-        if x == 0:
+        if self.a == 0:
             return 0  # following the convention of returning 1 only if x > 0
 
 
@@ -159,16 +161,16 @@ class Layer:
 
         return self.a
 
-    def backward(self, delta, grad_act):
+    def backward(self, delta):
         """
-        Takes the weighted sum of the deltas from the layer above it as input.
+        Takes an array of deltas from the layer above it as input.
         Computes gradient for its weights and the delta to pass to its previous layers.
         Return self.d_x
         """
-        self.d_w = self.x.T @ delta / len(x) # normalizing
+        self.d_w = self.x.T @ delta
 
-        self.d_x = grad_act(self.a) * (self.w @ delta)
-        self.d_x = delta * w
+        self.d_x = delta * self.aw.T
+
         self.d_b = np.sum(delta, axis=1)
 
         return self.d_x
@@ -192,6 +194,10 @@ class NeuralNetwork:
         self.x = None  # Save the input to forward in this
         self.y = None  # Save the output vector of model in this
         self.targets = None  # Save the targets in forward in this variable
+        self.loss = None
+
+        self.config = config
+        self.learning_rate = self.config['learning_rate']
 
         # Add layers specified by layer_specs.
         for i in range(len(config['layer_specs']) - 1):
@@ -211,26 +217,61 @@ class NeuralNetwork:
         Compute forward pass through all the layers in the network and return it.
         If targets are provided, return loss as well.
         """
-        raise NotImplementedError(
-            "Forward propagation not implemented for NeuralNetwork")
+
+        self.x = x
+        self.targets = targets
+
+        a = self.x
+        for i in range(0, len(self.layers)-1, 2):
+            # example of self.layers: [layer1, activation, layer2]
+            a = self.layers[i](self.y)
+            z = self.layers[i+1](self.y)
+
+        self.y = self.softmax(a)
+
+        if self.targets != None:
+            # implement using the cross entropy function below
+            self.loss = self.cross_entropy(self.y, self.targets)
+            return self.y, self.loss
+
+        return self.y
 
     def backward(self):
         """
         Implement backpropagation here.
         Call backward methods of individual layer's.
         """
-        raise NotImplementedError(
-            "Backward propagation not implemented for NeuralNetwork")
+        i = len(self.layers) - 1
+        delta_k = self.loss
 
-    def softmax(self, x):
+        self.backward_recur(self, i, delta_k)
+
+    def backward_recur(self, i, delta_k):
+        # layer backward
+        self.layers[i].backward(delta_k)
+        d_x = self.layers[i].d_x
+        self.layers[i].w -= self.config['learning_rate'] * self.layers[i].d_w
+        self.layers[i].b -= self.config['learning_rate'] * self.layers[i].d_b
+
+        # activation backward
+        if i > 0:
+            weighted_sum_delta = self.layers[i].d_x
+            delta_j = self.layers[i-1].backward(weighted_sum_delta)
+
+            self.backward_recur(self, i=i-2, delta_k=delta_j)
+
+    def softmax(self, a):
         """
         Implement the softmax function here.
         Remember to take care of the overflow condition.
         """
         return np.exp(a) / np.sum(np.exp(a))
 
-    def loss(self, logits, targets):
+    def cross_entropy(self, logits, targets):
         """
         Compute the categorical cross-entropy loss and return it.
         """
-        raise NotImplementedError("Loss not implemented for NeuralNetwork")
+        y_categories = np.max(logits, axis=1)
+        targets = data.onehot_decode(targets)
+
+        return -1 * np.dot(targets, np.log(y_categories))
