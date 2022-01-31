@@ -53,6 +53,9 @@ if __name__ == "__main__":
     x_val, _ = z_score_normalize(x_val)
     x_test, _ = z_score_normalize(x_test)
 
+    t_train = one_hot_encoding(t_train)
+    t_val = one_hot_encoding(t_val)
+
     # Run the writeup experiments here
     if args.train_mlp:
         train_mlp(x_train, t_train, x_val, t_val, x_test, t_test, config)
