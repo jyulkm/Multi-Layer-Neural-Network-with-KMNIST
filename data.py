@@ -14,7 +14,8 @@ def one_hot_encoding(labels, num_classes=10):
     """
     Encode labels using one hot encoding and return them.
     """
-    raise NotImplementedError('One Hot Encoding not implemented')
+    n = np.max(y) + 1
+    return np.eye(n)[y]
 
 
 def write_to_file(path, data):
