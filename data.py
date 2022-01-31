@@ -17,6 +17,24 @@ def one_hot_encoding(labels, num_classes=10):
     n = np.max(y) + 1
     return np.eye(n)[y]
 
+def onehot_decode(y):
+    """
+    Performs one-hot decoding on y.
+
+    Ideas:
+        NumPy's `argmax` function 
+
+    Parameters
+    ----------
+    y : np.array
+        2d array (shape n*k) with each row corresponding to a one-hot encoded version of the original value.
+
+    Returns
+    -------
+        1d array (length n) of targets (k)
+    """
+    return np.argmax(y, axis=1)
+
 
 def write_to_file(path, data):
     """
