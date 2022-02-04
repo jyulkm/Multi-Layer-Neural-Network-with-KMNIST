@@ -169,7 +169,7 @@ class Layer:
         """
         self.d_w = self.x.T @ delta
 
-        self.d_x = delta * self.aw.T
+        self.d_x = delta * self.w.T
 
         self.d_b = np.sum(delta, axis=1)
 
