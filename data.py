@@ -14,15 +14,16 @@ def one_hot_encoding(labels, num_classes=10):
     """
     Encode labels using one hot encoding and return them.
     """
-    n = np.max(y) + 1
-    return np.eye(n)[y]
+    n = np.max(labels) + 1
+    return np.eye(n)[labels]
+
 
 def onehot_decode(y):
     """
     Performs one-hot decoding on y.
 
     Ideas:
-        NumPy's `argmax` function 
+        NumPy's `argmax` function
 
     Parameters
     ----------
@@ -61,7 +62,8 @@ def load_data(train=True):
             Labels
     """
     directory = 'train' if train else 'test'
-    patterns = np.load(os.path.join('./data/', directory, 'images.npz'))['arr_0']
+    patterns = np.load(os.path.join(
+        './data/', directory, 'images.npz'))['arr_0']
     labels = np.load(os.path.join('./data/', directory, 'labels.npz'))['arr_0']
     return patterns.reshape(len(patterns), -1), labels
 

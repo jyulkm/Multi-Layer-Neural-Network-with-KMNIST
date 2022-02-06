@@ -3,7 +3,7 @@
 # Code snippet by Eric Yang Yu, Ajit Kumar, Savyasachi
 # Winter 2022
 ################################################################################
-from data import write_to_file, z_score_normalize
+from data import write_to_file, z_score_normalize, load_data, load_config
 from neuralnet import *
 
 
@@ -105,6 +105,96 @@ def regularization_experiment(x_train, t_train, x_val, t_val, x_test, t_test, co
     """
     raise NotImplementedError('Regularization Experiment not implemented')
 
+# compares this gradient with the math formula
+
+
+def get_approx(e, model_B, x_train, t_train, backprop_vals):
+    # stores the difference of gradients
+    diffs = []
+
+    for layer in ["input_hidden", "hidden_output"]:
+        for kind in ["weight", "bias"]:
+            print(layer + " " + kind + ":")
+
+            if kind == "weight":  # choose two weight values: w_00, w_10
+                for i in range(2):
+                    model_plus_e = initialize_weight(
+                        model_B, layer, kind, e, i, j=0)
+                    model_minus_e = initialize_weight(
+                        model_B, layer, kind, -e, i, j=0)
+
+                    _, E0 = model_minus_e(x_train, t_train)
+                    _, E1 = model_plus_e(x_train, t_train)
+
+                    backprop_val = backprop_vals["_".join(
+                        [layer, kind[0], str(i), str(0)])]
+                    approx_val = (E1 - E0) / (2*e)
+
+                    print("backprop val: " + str(backprop_val))
+                    print("approx val: " + str(approx_val))
+
+                    diff = np.abs(backprop_val - approx_val)
+
+                    diffs.append(diff)
+
+            if kind == "bias":
+                model_plus_e = initialize_weight(
+                    model_B, layer, kind, e, 0)
+                model_minus_e = initialize_weight(
+                    model_B, layer, kind, -e, 0)
+
+                _, E0 = model_minus_e(x_train, t_train)
+                _, E1 = model_plus_e(x_train, t_train)
+
+                backprop_val = backprop_vals["_".join([layer, kind[0]])]
+                approx_val = (E1 - E0) / (2*e)
+
+                print(backprop_val > 0)
+                print("approx val: " + str(approx_val*1000000))
+
+                diff = np.abs(backprop_val - approx_val)
+
+                diffs.append(diff)
+
+    return np.all(np.array(diffs) <= e**2)
+
+
+def initialize_weight(model_B, layer, kind, e=0, i=None, j=None):
+    """
+    Creates model_A and sets its weights and biases to match those of model_B:
+    model_A.w = model_B.w + e
+    """
+    model_A = NeuralNetwork(config=model_B.config)
+
+    # saves the layers
+    input_hidden_A = model_A.layers[0]
+    hidden_output_A = model_A.layers[2]
+
+    input_hidden_B = model_B.layers[0]
+    hidden_output_B = model_B.layers[2]
+
+    # reinitializes model weights to match the original model's
+    input_hidden_A.w = input_hidden_B.w
+    hidden_output_A.w = hidden_output_B.w
+
+    # reinitializes model biases to match the original model's
+    input_hidden_A.b = input_hidden_B.b
+    hidden_output_A.b = hidden_output_B.b
+
+    # change value
+    if kind == "weight":
+        if layer == "input_hidden":
+            input_hidden_A.w[i][j] += e
+        if layer == "hidden_output":
+            hidden_output_B.w[i][j] += e
+    if kind == "bias":
+        if layer == "input_hidden":
+            input_hidden_A.b[i] += e
+        if layer == "hidden_output":
+            hidden_output_B.b[i] += e
+
+    return model_A
+
 
 def check_gradients(x_train, t_train, config):
     """
@@ -113,12 +203,12 @@ def check_gradients(x_train, t_train, config):
     """
 
     # normalizes data
-    x_train = data.z_score_normalize(x_train)
+    x_train, _ = data.z_score_normalize(x_train)
     t_train = data.one_hot_encoding(t_train)
 
     # initializes the model
     model = NeuralNetwork(config=config)
-    y, _ = model(x_train, t_train)
+    y = model(x_train, t_train)
 
     # saves the layers of the model
     # Selecting the input to hidden layer object
@@ -151,7 +241,9 @@ def check_gradients(x_train, t_train, config):
                         hidden_output_w0) / model.learning_rate
 
     # calculates the gradients of the bias terms
-    input_hidden_bg = (input_hidden_b1 - input_hidden_b0) / model.learning_rate
+    input_hidden_bg = (input_hidden_b1[0] -
+                       input_hidden_b0[0]) / model.learning_rate
+
     hidden_output_bg = (hidden_output_b1 -
                         hidden_output_b0) / model.learning_rate
 
@@ -159,86 +251,19 @@ def check_gradients(x_train, t_train, config):
         "input_hidden_w_0_0": input_hidden_wg[0][0],
         "input_hidden_w_1_0": input_hidden_wg[1][0],
         "hidden_output_w_0_0": hidden_output_wg[0][0],
-        "hidden_output_w_1_1": hidden_output_wg[1][0],
+        "hidden_output_w_1_0": hidden_output_wg[1][0],
         "input_hidden_b": input_hidden_bg[0],
-        "hidden_output_b": hidden_output_bg[0],
+        "hidden_output_b": hidden_output_bg[0]
     }
 
-    # compares this gradient with the math formula
-    def get_approx(e, model_B, backprop_vals):
-        # stores the difference of gradients
-        diffs = []
-
-        for layer in ["input_hidden", "hidden_output"]:
-            for kind in ["weight", "bias"]:
-                print(layer + " " + kind + ":")
-
-                if kind == "weight":  # choose two weight values: w_00, w_10
-                    for i in range(2):
-                        model_plus_e = initialize_weight(
-                            model_B, layer, kind, e, i, j=0)
-                        model_minus_e = initialize_weight(
-                            model_B, layer, kind, -e, i, j=0)
-
-                        _, E0 = model_minus_e(x_train, t_train)
-                        _, E1 = model_plus_e(x_train, t_train)
-
-                        diff = np.abs(backprop_vals["_".join(
-                            layer, kind[0], str(i), str(0))] - (E1 - E0) / (2*e))
-                        diffs.append(diff)
-
-                if kind == "bias":
-                    model_plus_e = initialize_weight(
-                        model_B, layer, kind, e, 0)
-                    model_minus_e = initialize_weight(
-                        model_B, layer, kind, -e, 0)
-
-                    _, E0 = model_minus_e(x_train, t_train)
-                    _, E1 = model_plus_e(x_train, t_train)
-
-                    diff = np.abs(backprop_vals["_".join(
-                        layer, kind[0])] - (E1 - E0) / (2*e))
-                    diffs.append(diff)
-
-        return np.all(np.array(diffs) <= e**2)
-
-    def initialize_weight(model_B, layer, kind, e=0, i=None, j=None):
-        """
-        Creates model_A and sets its weights and biases to match those of model_B:
-        model_A.w = model_B.w + e
-        """
-        model_A = NeuralNetwork(config=model_B.config)
-
-        # saves the layers
-        input_hidden_A = model_A.layers[0]
-        hidden_output_A = model_A.layers[2]
-
-        input_hidden_B = model_B.layers[0]
-        hidden_output_B = model_B.layers[2]
-
-        # reinitializes model weights to match the original model's
-        input_hidden_A.w = input_hidden_B.w
-        hidden_output_A.w = input_hidden_B.w
-
-        # reinitializes model biases to match the original model's
-        input_hidden_A.b = input_hidden_B.b
-        hidden_output_A.b = input_hidden_B.b
-
-        # change value
-        if kind == "weight":
-            if layer == "input_hidden":
-                input_hidden_A.w[i][j] += e
-            if layer == "hidden_output":
-                hidden_output_B.w[i][j] += e
-        if kind == "bias":
-            if layer == "input_hidden":
-                input_hidden_A.b[i] += e
-            if layer == "hidden_output":
-                hidden_output_B.b[i] += e
-
-        return model_A, model_B
-
-    if get_approx(10 ^ -2, model, backprop_vals):
+    if get_approx((10 ** -2), model, x_train, t_train, backprop_vals):
         print("Success: gradients within range")
     else:
         print("Fail: gradients not within range")
+
+
+config = load_config("./config.yaml")
+x_train = load_data()[0]
+t_train = load_data()[1]
+
+check_gradients(x_train, t_train, config)

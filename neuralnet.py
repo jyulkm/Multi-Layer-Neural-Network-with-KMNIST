@@ -166,9 +166,9 @@ class Layer:
         """
         self.d_w = self.x.T @ delta
 
-        self.d_x = delta * self.w.T
+        self.d_x = delta @ self.w.T
 
-        self.d_b = np.sum(delta, axis=1)
+        self.d_b = np.sum(delta)
 
         return self.d_x
 
@@ -191,7 +191,8 @@ class NeuralNetwork:
         self.x = None  # Save the input to forward in this
         self.y = None  # Save the output vector of model in this
         self.targets = None  # Save the targets in forward in this variable
-        self.loss = None
+        self.loss = None  # cross entropy performed on
+        self.loss_argmax = None
 
         self.config = config
         self.learning_rate = self.config['learning_rate']
@@ -218,20 +219,22 @@ class NeuralNetwork:
         self.x = x
         self.targets = targets
 
-        a = self.x
-        for i in range(0, len(self.layers)-1, 2):
-            # example of self.layers: [layer1, activation, layer2]
-            a = self.layers[i](self.y)
-            z = self.layers[i+1](self.y)
+        z = self.x
+        a = None
+        for i in range(0, len(self.layers), 2):
+            # example of self.layers: [layer1, activation1, layer2]
+            a = self.layers[i](z)  # calculates the weighted sum input
+
+            if i + 1 < len(self.layers):
+                z = self.layers[i+1](a)
 
         self.y = self.softmax(a)
 
-        if self.targets != None:
+        if not isinstance(self.targets, type(None)):
             # implement using the cross entropy function below
-            self.loss = self.cross_entropy(self.y, self.targets)
-            return self.y, self.loss
+            self.loss = self.targets - self.y
 
-        return self.y
+        return self.y, self.loss
 
     def backward(self):
         """
@@ -241,12 +244,11 @@ class NeuralNetwork:
         i = len(self.layers) - 1
         delta_k = self.loss
 
-        self.backward_recur(self, i, delta_k)
+        self.backward_recur(i, delta_k)
 
     def backward_recur(self, i, delta_k):
         # layer backward
         self.layers[i].backward(delta_k)
-        d_x = self.layers[i].d_x
         self.layers[i].w -= self.config['learning_rate'] * self.layers[i].d_w
         self.layers[i].b -= self.config['learning_rate'] * self.layers[i].d_b
 
@@ -255,7 +257,7 @@ class NeuralNetwork:
             weighted_sum_delta = self.layers[i].d_x
             delta_j = self.layers[i-1].backward(weighted_sum_delta)
 
-            self.backward_recur(self, i=i-2, delta_k=delta_j)
+            self.backward_recur(i=i-2, delta_k=delta_j)
 
     def softmax(self, a):
         """
