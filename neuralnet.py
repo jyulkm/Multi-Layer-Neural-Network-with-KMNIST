@@ -4,9 +4,6 @@
 # Winter 2022
 ################################################################################
 
-# TODO: double check layer class forward function
-# TODO: double check layer class backward function
-
 import numpy as np
 import math
 import data
