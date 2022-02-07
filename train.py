@@ -34,7 +34,7 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
     N = len(x_train)  # number of examples
 
     model = NeuralNetwork(config=config)
-    for epoch in config["epochs"]:
+    for epoch in range(config["epochs"]):
 
         shuffled_indices = np.random.permutation(N)
         x_train = x_train[shuffled_indices]
@@ -50,6 +50,9 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
             minibatch_acc.append(accuracy)
 
             model.backward()
+
+        train_acc.append(minibatch_acc.mean())
+        train_loss.append(minibatch_loss.mean())
 
     # return train_acc, val_acc, train_loss, val_loss, best_model
     raise NotImplementedError('Train not implemented')
@@ -127,93 +130,55 @@ def regularization_experiment(x_train, t_train, x_val, t_val, x_test, t_test, co
 # compares this gradient with the math formula
 
 
-def get_approx(e, model_B, x_train, t_train, backprop_vals):
-    # stores the difference of gradients
-    diffs = []
-
-    for layer in ["input_hidden", "hidden_output"]:
-        for kind in ["weight", "bias"]:
-            print(layer + " " + kind + ":")
-
-            if kind == "weight":  # choose two weight values: w_00, w_10
-                for i in range(2):
-                    model_plus_e = initialize_weight(
-                        model_B, layer, kind, e, i, j=0)
-                    model_minus_e = initialize_weight(
-                        model_B, layer, kind, -e, i, j=0)
-
-                    _, E0 = model_minus_e(x_train, t_train)
-                    _, E1 = model_plus_e(x_train, t_train)
-
-                    backprop_val = backprop_vals["_".join(
-                        [layer, kind[0], str(i), str(0)])]
-                    approx_val = (E1 - E0) / (2*e)
-
-                    # print("backprop val: " + str(backprop_val))
-                    # print("approx val: " + str(approx_val))
-
-                    diff = np.abs(backprop_val - approx_val)
-
-                    diffs.append(diff)
-
-            if kind == "bias":
-                model_plus_e = initialize_weight(
-                    model_B, layer, kind, e, 0)
-                model_minus_e = initialize_weight(
-                    model_B, layer, kind, -e, 0)
-
-                _, E0 = model_minus_e(x_train, t_train)
-                _, E1 = model_plus_e(x_train, t_train)
-
-                backprop_val = backprop_vals["_".join([layer, kind[0]])]
-                approx_val = (E1 - E0) / (2*e)
-
-                # print("backprop val: " + str(backprop_val))
-                # print("approx val: " + str(approx_val*1000000))
-
-                diff = np.abs(backprop_val - approx_val)
-
-                diffs.append(diff)
-
-    print(diffs)
-    return np.all(np.array(diffs) <= e**2)
-
-
-def initialize_weight(model_B, layer, kind, e=0, i=None, j=None):
+def update_weight(model, layer, kind, e=0, i=0, j=0):
     """
     Creates model_A and sets its weights and biases to match those of model_B:
     model_A.w = model_B.w + e
     """
-    model_A = NeuralNetwork(config=model_B.config)
 
-    # saves the layers
-    input_hidden_A = model_A.layers[0]
-    hidden_output_A = model_A.layers[2]
+    layer_map = {
+        "input_to_hidden": 0,
+        "hidden_to_output": 2
+    }
 
-    input_hidden_B = model_B.layers[0]
-    hidden_output_B = model_B.layers[2]
-
-    # reinitializes model weights to match the original model's
-    input_hidden_A.w = input_hidden_B.w
-    hidden_output_A.w = hidden_output_B.w
-
-    # reinitializes model biases to match the original model's
-    input_hidden_A.b = input_hidden_B.b
-    hidden_output_A.b = hidden_output_B.b
-
-    # change value
     if kind == "weight":
-        if layer == "input_hidden":
-            input_hidden_A.w[i][j] += e
-        if layer == "hidden_output":
-            hidden_output_A.w[i][j] += e
-    if kind == "bias":
-        if layer == "input_hidden":
-            input_hidden_A.b[i] += e
-        if layer == "hidden_output":
-            hidden_output_A.b[i] += e
+        model.layers[layer_map[layer]].w[i][j] += e
 
-    return model_A
+    if kind == "bias":
+        model.layers[layer_map[layer]].b[0][i] += e
+
+
+def find_grad_diff(config, layer, kind, x_train, t_train, e, i=0, j=0):
+    # initializes the model
+    model = NeuralNetwork(config=config)
+
+    update_weight(model, layer, kind, e=e, i=i, j=j)
+    _, loss1 = model(x_train, t_train)
+
+    update_weight(model, layer, kind, e=-2*e, i=i, j=j)
+    _, loss2 = model(x_train, t_train)
+
+    approx_grad = abs((loss1 - loss2) / (2*e))
+
+    update_weight(model, layer, kind, e=e, i=i, j=j)
+    model(x_train, t_train)
+    model.backward()
+
+    layer_map = {
+        "input_to_hidden": 0,
+        "hidden_to_output": 2
+    }
+
+    if kind == "weight":
+        actual_grad = abs(model.layers[layer_map[layer]].d_w[i][j])
+    if kind == "bias":
+        actual_grad = abs(model.layers[layer_map[layer]].d_b[0])
+
+    print(layer, kind, i, j)
+    print("approximated gradient: ", approx_grad)
+    print("back propagation gradient: ", actual_grad)
+    print(np.isclose(approx_grad, actual_grad, e**2))
+    print()
 
 
 def check_gradients(x_train, t_train, config):
@@ -221,78 +186,15 @@ def check_gradients(x_train, t_train, config):
     Check the network gradients computed by back propagation by comparing with the gradients computed using numerical
     approximation.
     """
+    e = 10**-2
 
-    # normalizes data
-    x_train, _ = data.z_score_normalize(x_train)
-    t_train = data.one_hot_encoding(t_train)
+    x_train = np.array([x_train[0]])
+    t_train = np.array([t_train[0]])
 
-    # initializes the model
-    model = NeuralNetwork(config=config)
-
-    # saves the layers of the model
-    # Selecting the input to hidden layer object
-    input_hidden = model.layers[0]
-    # Selecting the hidden to output layer object
-    hidden_output = model.layers[2]
-
-    # saves the initial bias terms of each layer
-    input_hidden_b0 = input_hidden.b.copy()
-    hidden_output_b0 = hidden_output.b.copy()
-
-    # saves the initial weight matrices of each layer
-    input_hidden_w0 = input_hidden.w.copy()
-    hidden_output_w0 = hidden_output.w.copy()
-
-    # performs forward and backward propagations
-    model(x_train, t_train)
-    model.backward()
-
-    # saves the initial bias terms of each layer
-    input_hidden_b1 = input_hidden.b.copy()
-    hidden_output_b1 = hidden_output.b.copy()
-
-    # saves the initial weight matrices of each layer
-    input_hidden_w1 = input_hidden.w.copy()
-    hidden_output_w1 = hidden_output.w.copy()
-
-    # calculates the gradients of the weight matrices
-    input_hidden_wg = (input_hidden_w1 - input_hidden_w0) / model.learning_rate
-    hidden_output_wg = (hidden_output_w1 -
-                        hidden_output_w0) / model.learning_rate
-
-    # calculates the gradients of the bias terms
-    input_hidden_bg = (input_hidden_b1[0] -
-                       input_hidden_b0[0]) / model.learning_rate
-
-    hidden_output_bg = (hidden_output_b1[0] -
-                        hidden_output_b0[0]) / model.learning_rate
-
-    backprop_vals = {
-        "input_hidden_w_0_0": input_hidden_wg[0][0],
-        "input_hidden_w_1_0": input_hidden_wg[1][0],
-        "hidden_output_w_0_0": hidden_output_wg[0][0],
-        "hidden_output_w_1_0": hidden_output_wg[1][0],
-        "input_hidden_b": input_hidden_bg[0],
-        "hidden_output_b": hidden_output_bg[0]
-    }
-
-    if get_approx((10 ** -2), model, x_train, t_train, backprop_vals):
-        print("Success: gradients within range")
-    else:
-        print("Fail: gradients not within range")
-
-
-config = load_config("./config.yaml")
-
-
-x_train = load_data()[0]
-t_train = load_data()[1]
-
-N = len(x_train)
-
-shuffled_indices = np.random.permutation(N)
-x_train = x_train[shuffled_indices]
-t_train = t_train[shuffled_indices]
-
-
-check_gradients(x_train, t_train, config)
+    for layer in ["input_to_hidden", "hidden_to_output"]:
+        for kind in ["weight", "bias"]:
+            if kind == "weight":
+                for i in [0, 1]:
+                    find_grad_diff(config, layer, kind, x_train, t_train, e, i)
+            if kind == "bias":
+                find_grad_diff(config, layer, kind, x_train, t_train, e)

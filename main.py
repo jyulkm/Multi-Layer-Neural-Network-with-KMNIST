@@ -13,9 +13,9 @@ from train import *
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_mlp', dest='train_mlp', action='store_true', default=True,  # set to True for train_mlp
+    parser.add_argument('--train_mlp', dest='train_mlp', action='store_true', default=False,  # set to True for train_mlp
                         help='Train a single multi-layer perceptron using configs provided in config.yaml')
-    parser.add_argument('--check_gradients', dest='check_gradients', action='store_true', default=False,
+    parser.add_argument('--check_gradients', dest='check_gradients', action='store_true', default=True,
                         help='Check the network gradients computed by comparing the gradient computed using'
                              'numerical approximation with that computed as in back propagation.')
     parser.add_argument('--regularization', dest='regularization', action='store_true', default=False,

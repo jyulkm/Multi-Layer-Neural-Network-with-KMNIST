@@ -225,24 +225,19 @@ class NeuralNetwork:
 
         self.x = x
 
-        z = self.x
-        a = None
-        for i in range(0, len(self.layers), 2):
+        input = self.x  # input for forward propagation
+        for layer in self.layers:  # recursively forward-propagates
             # example of self.layers: [layer1, activation1, layer2]
-            a = self.layers[i](z)  # calculates the weighted sum input
+            input = layer(input)
 
-            if i + 1 < len(self.layers):
-                z = self.layers[i+1](a)
-
-        self.y = self.softmax(a)
+        self.y = self.softmax(input)  # output layer output
 
         if not isinstance(targets, type(None)):
             self.targets = targets
-            self.loss = self.cross_entropy(self.y, self.targets)
-            self.delta_k = self.targets - \
-                data.one_hot_encoding(np.argmax(self.y, axis=1))
+            self.loss = self.cross_entropy(self.y, self.targets).mean()
+            self.delta_k = self.targets - self.y
 
-        self.y_labels = np.argmax(z, axis=1)
+        self.y_labels = np.argmax(self.y, axis=1)
 
         return self.y_labels, self.loss
 
@@ -265,11 +260,14 @@ class NeuralNetwork:
         Implement the softmax function here.
         Remember to take care of the overflow condition.
         """
-        def subtract_max(a): return a - max(a)
-        return np.exp(a) / np.sum(np.exp(np.apply_along_axis(subtract_max, 1, a)))
+        # def subtract_max(a): return a - np.max(a)
+        # return np.exp(a) / np.sum(np.exp(np.apply_along_axis(subtract_max, 1, a)), axis=1)
+
+        a -= np.max(a)
+        return np.exp(a) / np.sum(np.exp(a), axis=1)
 
     def cross_entropy(self, logits, targets):
         """
         Compute the categorical cross-entropy loss and return it.
         """
-        return -np.sum(targets * np.log(logits))
+        return -np.sum(targets * np.log(logits), axis=1)
