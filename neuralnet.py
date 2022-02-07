@@ -270,6 +270,24 @@ class NeuralNetwork:
 
     def cross_entropy(self, logits, targets):
         """
-        Compute the categorical cross-entropy loss and return it.
+        Compute multiclass cross entropy.
+        L(x) = - Σ (t*ln(y))
+        Parameters
+        ----------
+        y
+            The network's predictions
+        t
+            The corresponding targets
+        Returns
+        -------
+        float 
+            multiclass cross entropy loss value according to above definition
         """
-        return -np.sum(targets * np.log(logits))
+
+        # Calculates average loss over n training examples
+        avg_loss_n = (-1) * np.mean(np.sum(np.multiply(t,np.log(y)), axis=1))
+
+        # Calculates average loss over c categories
+        avg_loss_c = (-1) * np.mean(np.sum(np.multiply(t,np.log(y)), axis=0))
+
+        return avg_loss_n,avg_loss_c
