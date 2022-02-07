@@ -39,14 +39,13 @@ if __name__ == "__main__":
 
     # Create validation set out of training data.
     x_train, t_train = train_data
-
-    x_train = np.random.shuffle(x_train)
-    t_train = np.random.shuffle(t_train)
+    rand_indices = np.random.choice(len(x_train),len(x_train), replace=False)
+    x_train = x_train[rand_indices]
+    t_train = t_train[rand_indices]
 
     N = x_train.shape[0]
     a = int(np.round(N*0.8))
-    x_train, t_train, x_val, t_val = x_train[:
-                                             a], t_train[:a], x_train[a:], t_train[a:]
+    x_train, t_train, x_val, t_val = x_train[:a], t_train[:a], x_train[a:], t_train[a:]
 
     # Any pre-processing on the datasets goes here.
     x_train, _ = z_score_normalize(x_train)
@@ -55,6 +54,7 @@ if __name__ == "__main__":
 
     t_train = one_hot_encoding(t_train)
     t_val = one_hot_encoding(t_val)
+    t_test = one_hot_encoding(t_test)
 
     # Run the writeup experiments here
     if args.train_mlp:

@@ -7,6 +7,7 @@
 import numpy as np
 import math
 import data
+import copy
 
 
 class Activation:
@@ -70,7 +71,7 @@ class Activation:
         elif self.activation_type == "ReLU":
             grad = self.grad_ReLU()
 
-        return grad * delta
+        return np.multiply(grad, delta)
 
     def sigmoid(self, a):
         """
@@ -141,6 +142,9 @@ class Layer:
         self.d_w = None  # Save the gradient w.r.t w in this
         self.d_b = None  # Save the gradient w.r.t b in this
 
+        self.prev_w = 0 # For updating weights using momentum
+        self.prev_b = 0
+
     def __call__(self, x):
         """
         Make layer callable.
@@ -164,13 +168,23 @@ class Layer:
         Computes gradient for its weights and the delta to pass to its previous layers.
         Return self.d_x
         """
+        #assert (delta.shape==tuple([48000, 10])) | (delta.shape==tuple([48000, 128])), "The deltas must be of shape (48000, 10)"
+
         self.d_w = self.x.T @ delta
 
-        self.d_x = delta * self.w.T
+        self.d_x = delta @ self.w.T
 
-        self.d_b = np.sum(delta, axis=1)
+        self.d_b = np.sum(delta.T, axis=1)
 
         return self.d_x
+
+    def update_weights(self, alpha, gamma):
+        momentum_w = gamma * self.d_w + ((1 - gamma) * self.prev_w)
+        momentum_b = gamma * self.d_b + ((1 - gamma) * self.prev_b)
+        self.prev_w = momentum_w
+        self.prev_b = momentum_b
+        self.w = self.w + alpha * momentum_w
+        self.b = self.b + alpha * momentum_b
 
 
 class NeuralNetwork:
@@ -195,6 +209,7 @@ class NeuralNetwork:
 
         self.config = config
         self.learning_rate = self.config['learning_rate']
+        self.gamma = self.config['momentum_gamma']
 
         # Add layers specified by layer_specs.
         for i in range(len(config['layer_specs']) - 1):
@@ -218,18 +233,20 @@ class NeuralNetwork:
         self.x = x
         self.targets = targets
 
-        a = self.x
-        for i in range(0, len(self.layers)-1, 2):
+        z = self.x
+        for i in range(0, len(self.layers), 2):
             # example of self.layers: [layer1, activation, layer2]
-            a = self.layers[i](self.y)
-            z = self.layers[i+1](self.y)
+            a = self.layers[i](z)
+            if (i + 1) < len(self.layers):
+                z = self.layers[i+1](a)
 
-        self.y = self.softmax(a)
+        a_protect = a - np.max(a)
+        self.y = self.softmax(a_protect)
 
-        if self.targets != None:
+        if self.targets is not None:
             # implement using the cross entropy function below
-            self.loss = self.cross_entropy(self.y, self.targets)
-            return self.y, self.loss
+            self.loss = self.targets - self.y
+            return self.y, self.cross_entropy(self.y, self.targets)
 
         return self.y
 
@@ -239,36 +256,43 @@ class NeuralNetwork:
         Call backward methods of individual layer's.
         """
         i = len(self.layers) - 1
-        delta_k = self.loss
+        delta_k = self.targets - self.y
 
-        self.backward_recur(self, i, delta_k)
+        return self.backward_recur(i, delta_k)
 
     def backward_recur(self, i, delta_k):
-        # layer backward
+        '''
+        Delta is the right shape:
+            - N x c the first pass
+            - N x M the second pass
+        '''
         self.layers[i].backward(delta_k)
-        d_x = self.layers[i].d_x
-        self.layers[i].w -= self.config['learning_rate'] * self.layers[i].d_w
-        self.layers[i].b -= self.config['learning_rate'] * self.layers[i].d_b
+
+        # self.layers[i].b += self.learning_rate * self.layers[i].d_b / delta_k.shape[0]
+        self.layers[i].update_weights(self.learning_rate, self.gamma)
 
         # activation backward
+        # i = 2, hidden to output layer
         if i > 0:
             weighted_sum_delta = self.layers[i].d_x
             delta_j = self.layers[i-1].backward(weighted_sum_delta)
+            # print(weighted_sum_delta.shape)
+            # print(delta_j.shape)
 
-            self.backward_recur(self, i=i-2, delta_k=delta_j)
+            return self.backward_recur(i-2, delta_j)
+        return self.layers[i].d_w
 
     def softmax(self, a):
         """
         Implement the softmax function here.
         Remember to take care of the overflow condition.
         """
-        return np.exp(a) / np.sum(np.exp(a))
+        #assert a.shape==tuple([48000, 10]), "Input matrix must be of shape (48000, 10)"
+        return (np.exp(a).T / np.sum(np.exp(a),axis=1)).T
 
     def cross_entropy(self, logits, targets):
         """
         Compute the categorical cross-entropy loss and return it.
         """
-        y_categories = np.max(logits, axis=1)
-        targets = data.onehot_decode(targets)
 
-        return -1 * np.dot(targets, np.log(y_categories))
+        return -1 * np.sum(targets * np.log(logits))
