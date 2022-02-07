@@ -13,7 +13,7 @@ from train import *
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_mlp', dest='train_mlp', action='store_true', default=False,
+    parser.add_argument('--train_mlp', dest='train_mlp', action='store_true', default=True,  # set to True for train_mlp
                         help='Train a single multi-layer perceptron using configs provided in config.yaml')
     parser.add_argument('--check_gradients', dest='check_gradients', action='store_true', default=False,
                         help='Check the network gradients computed by comparing the gradient computed using'
@@ -40,18 +40,20 @@ if __name__ == "__main__":
     # Create validation set out of training data.
     x_train, t_train = train_data
 
-    x_train = np.random.shuffle(x_train)
-    t_train = np.random.shuffle(t_train)
-
     N = x_train.shape[0]
+
+    shuffled_indices = np.random.permutation(N)
+    x_train = x_train[shuffled_indices]
+    t_train = t_train[shuffled_indices]
+
     a = int(np.round(N*0.8))
     x_train, t_train, x_val, t_val = x_train[:
                                              a], t_train[:a], x_train[a:], t_train[a:]
 
     # Any pre-processing on the datasets goes here.
-    x_train, _ = z_score_normalize(x_train)
-    x_val, _ = z_score_normalize(x_val)
-    x_test, _ = z_score_normalize(x_test)
+    x_train, (mean, sd) = z_score_normalize(x_train)
+    x_val, _ = z_score_normalize(x_val, mean, sd)
+    x_test, _ = z_score_normalize(x_test, mean, sd)
 
     t_train = one_hot_encoding(t_train)
     t_val = one_hot_encoding(t_val)

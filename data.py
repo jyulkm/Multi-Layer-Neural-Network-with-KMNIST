@@ -135,3 +135,21 @@ def z_score_normalize(X, u=None, sd=None):
     if sd is None:
         sd = np.std(X, axis=0)
     return ((X - u) / sd), (u, sd)
+
+def generate_minibatches(X, y, batch_size=64):
+    """
+    Creates a generator that yields and splits up X and y into batch_size-many minibatches.
+    Args:
+        X (np.array): the input dataset
+        y (np.array): the label vector
+        batch_size (int, optional): the number of batches to create. Defaults to 64.
+
+    Yields:
+        generator: outputs a selection of X and y
+    """
+    l_idx, r_idx = 0, batch_size
+    while r_idx < len(X):
+        yield X[l_idx:r_idx], y[l_idx:r_idx]
+        l_idx, r_idx = r_idx, r_idx + batch_size
+
+    yield X[l_idx:], y[l_idx:]

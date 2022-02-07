@@ -31,9 +31,25 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
     val_loss = []
     best_model = None
 
-    x_train = z_score_normalize(x_train)
+    N = len(x_train)  # number of examples
 
     model = NeuralNetwork(config=config)
+    for epoch in config["epochs"]:
+
+        shuffled_indices = np.random.permutation(N)
+        x_train = x_train[shuffled_indices]
+        t_train = t_train[shuffled_indices]
+
+        minibatch_loss = []  # saves the loss over all minibatches
+        minibatch_acc = []  # saves the accuracy over all minibatches
+        for minibatch in data.generate_minibatches(x_train, t_train, batch_size=config["batch_size"]):
+            x, t = minibatch
+            loss, accuracy = test(model, x, t)  # performs forward propagation
+
+            minibatch_loss.append(loss)
+            minibatch_acc.append(accuracy)
+
+            model.backward()
 
     # return train_acc, val_acc, train_loss, val_loss, best_model
     raise NotImplementedError('Train not implemented')
@@ -52,7 +68,10 @@ def test(model, x_test, t_test):
         Loss, Test accuracy
     """
     # return loss, accuracy
-    raise NotImplementedError('Test not implemented')
+    y_labels, loss = model(x_test, t_test)
+    accuracy = np.mean(y_labels == np.argmax(t_test, axis=1))
+
+    return loss, accuracy
 
 
 def train_mlp(x_train, t_train, x_val, t_val, x_test, t_test, config):
@@ -130,8 +149,8 @@ def get_approx(e, model_B, x_train, t_train, backprop_vals):
                         [layer, kind[0], str(i), str(0)])]
                     approx_val = (E1 - E0) / (2*e)
 
-                    print("backprop val: " + str(backprop_val))
-                    print("approx val: " + str(approx_val))
+                    # print("backprop val: " + str(backprop_val))
+                    # print("approx val: " + str(approx_val))
 
                     diff = np.abs(backprop_val - approx_val)
 
@@ -149,13 +168,14 @@ def get_approx(e, model_B, x_train, t_train, backprop_vals):
                 backprop_val = backprop_vals["_".join([layer, kind[0]])]
                 approx_val = (E1 - E0) / (2*e)
 
-                print(backprop_val > 0)
-                print("approx val: " + str(approx_val*1000000))
+                # print("backprop val: " + str(backprop_val))
+                # print("approx val: " + str(approx_val*1000000))
 
                 diff = np.abs(backprop_val - approx_val)
 
                 diffs.append(diff)
 
+    print(diffs)
     return np.all(np.array(diffs) <= e**2)
 
 
@@ -186,12 +206,12 @@ def initialize_weight(model_B, layer, kind, e=0, i=None, j=None):
         if layer == "input_hidden":
             input_hidden_A.w[i][j] += e
         if layer == "hidden_output":
-            hidden_output_B.w[i][j] += e
+            hidden_output_A.w[i][j] += e
     if kind == "bias":
         if layer == "input_hidden":
             input_hidden_A.b[i] += e
         if layer == "hidden_output":
-            hidden_output_B.b[i] += e
+            hidden_output_A.b[i] += e
 
     return model_A
 
@@ -208,7 +228,6 @@ def check_gradients(x_train, t_train, config):
 
     # initializes the model
     model = NeuralNetwork(config=config)
-    y = model(x_train, t_train)
 
     # saves the layers of the model
     # Selecting the input to hidden layer object
@@ -217,23 +236,24 @@ def check_gradients(x_train, t_train, config):
     hidden_output = model.layers[2]
 
     # saves the initial bias terms of each layer
-    input_hidden_b0 = input_hidden.b
-    hidden_output_b0 = hidden_output.b
+    input_hidden_b0 = input_hidden.b.copy()
+    hidden_output_b0 = hidden_output.b.copy()
 
     # saves the initial weight matrices of each layer
-    input_hidden_w0 = input_hidden.w
-    hidden_output_w0 = hidden_output.w
+    input_hidden_w0 = input_hidden.w.copy()
+    hidden_output_w0 = hidden_output.w.copy()
 
-    # performs backward propagation
+    # performs forward and backward propagations
+    model(x_train, t_train)
     model.backward()
 
     # saves the initial bias terms of each layer
-    input_hidden_b1 = input_hidden.b
-    hidden_output_b1 = hidden_output.b
+    input_hidden_b1 = input_hidden.b.copy()
+    hidden_output_b1 = hidden_output.b.copy()
 
     # saves the initial weight matrices of each layer
-    input_hidden_w1 = input_hidden.w
-    hidden_output_w1 = hidden_output.w
+    input_hidden_w1 = input_hidden.w.copy()
+    hidden_output_w1 = hidden_output.w.copy()
 
     # calculates the gradients of the weight matrices
     input_hidden_wg = (input_hidden_w1 - input_hidden_w0) / model.learning_rate
@@ -244,8 +264,8 @@ def check_gradients(x_train, t_train, config):
     input_hidden_bg = (input_hidden_b1[0] -
                        input_hidden_b0[0]) / model.learning_rate
 
-    hidden_output_bg = (hidden_output_b1 -
-                        hidden_output_b0) / model.learning_rate
+    hidden_output_bg = (hidden_output_b1[0] -
+                        hidden_output_b0[0]) / model.learning_rate
 
     backprop_vals = {
         "input_hidden_w_0_0": input_hidden_wg[0][0],
@@ -263,7 +283,16 @@ def check_gradients(x_train, t_train, config):
 
 
 config = load_config("./config.yaml")
+
+
 x_train = load_data()[0]
 t_train = load_data()[1]
+
+N = len(x_train)
+
+shuffled_indices = np.random.permutation(N)
+x_train = x_train[shuffled_indices]
+t_train = t_train[shuffled_indices]
+
 
 check_gradients(x_train, t_train, config)

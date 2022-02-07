@@ -4,8 +4,10 @@
 # Winter 2022
 ################################################################################
 
+from __future__ import print_function
 import numpy as np
 import math
+
 import data
 
 
@@ -58,7 +60,7 @@ class Activation:
 
     def backward(self, delta):
         """
-        Takes in the weighted sum delta. 
+        Takes in the weighted sum delta.
         Compute the backward pass.
         """
         if self.activation_type == "sigmoid":
@@ -165,12 +167,17 @@ class Layer:
         Return self.d_x
         """
         self.d_w = self.x.T @ delta
-
         self.d_x = delta @ self.w.T
-
-        self.d_b = np.sum(delta)
+        self.d_b = np.sum(delta, axis=0)
 
         return self.d_x
+
+    def update_weights(self, learning_rate, momentum=None):
+        if momentum != None:
+            pass
+
+        self.w += learning_rate * self.d_w
+        self.b += learning_rate * self.d_b
 
 
 class NeuralNetwork:
@@ -192,7 +199,7 @@ class NeuralNetwork:
         self.y = None  # Save the output vector of model in this
         self.targets = None  # Save the targets in forward in this variable
         self.loss = None  # cross entropy performed on
-        self.loss_argmax = None
+        self.delta_k = None  # output layer delta
 
         self.config = config
         self.learning_rate = self.config['learning_rate']
@@ -217,7 +224,6 @@ class NeuralNetwork:
         """
 
         self.x = x
-        self.targets = targets
 
         z = self.x
         a = None
@@ -230,47 +236,40 @@ class NeuralNetwork:
 
         self.y = self.softmax(a)
 
-        if not isinstance(self.targets, type(None)):
-            # implement using the cross entropy function below
-            self.loss = self.targets - self.y
+        if not isinstance(targets, type(None)):
+            self.targets = targets
+            self.loss = self.cross_entropy(self.y, self.targets)
+            self.delta_k = self.targets - \
+                data.one_hot_encoding(np.argmax(self.y, axis=1))
 
-        return self.y, self.loss
+        self.y_labels = np.argmax(z, axis=1)
+
+        return self.y_labels, self.loss
 
     def backward(self):
         """
         Implement backpropagation here.
         Call backward methods of individual layer's.
         """
-        i = len(self.layers) - 1
-        delta_k = self.loss
+        # update deltas:
+        delta = self.delta_k
+        for layer in self.layers[::-1]:
+            delta = layer.backward(delta)
 
-        self.backward_recur(i, delta_k)
-
-    def backward_recur(self, i, delta_k):
-        # layer backward
-        self.layers[i].backward(delta_k)
-        self.layers[i].w -= self.config['learning_rate'] * self.layers[i].d_w
-        self.layers[i].b -= self.config['learning_rate'] * self.layers[i].d_b
-
-        # activation backward
-        if i > 0:
-            weighted_sum_delta = self.layers[i].d_x
-            delta_j = self.layers[i-1].backward(weighted_sum_delta)
-
-            self.backward_recur(i=i-2, delta_k=delta_j)
+        # update weights
+        for layer in self.layers[::-2]:
+            layer.update_weights(self.learning_rate)
 
     def softmax(self, a):
         """
         Implement the softmax function here.
         Remember to take care of the overflow condition.
         """
-        return np.exp(a) / np.sum(np.exp(a))
+        def subtract_max(a): return a - max(a)
+        return np.exp(a) / np.sum(np.exp(np.apply_along_axis(subtract_max, 1, a)))
 
     def cross_entropy(self, logits, targets):
         """
         Compute the categorical cross-entropy loss and return it.
         """
-        y_categories = np.max(logits, axis=1)
-        targets = data.onehot_decode(targets)
-
-        return -1 * np.dot(targets, np.log(y_categories))
+        return -np.sum(targets * np.log(logits))
