@@ -30,30 +30,63 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
     train_loss = []
     val_loss = []
     best_model = None
+    # With momentum: v(t)=alpha*v(t-1)-epsilon*dW(t), w = w + v(t)
+    
+    batch_size = config['batch_size']
+    epochs = config['epochs']
+    early_stop_bool = config['early_stop']
+    gamma = config['momentum_gamma']
+    L2 = config['L2_penalty']
+    
+    patience = 5 # number of epochs to wait till early stopping if validation error continues to go up
+    recent_loss = float('inf')
+    
+    if experiment == 'regularization':
+      model = NeuralNetwork(config=config, regularization = True)
+    else:
+    	model = NeuralNetwork(config=config)
+    
+    for e in epochs:
+      count = 0
 
-    N = len(x_train)  # number of examples
+      minibatch_loss = []  # saves the loss over all minibatches
+      minibatch_acc = []  # saves the accuracy over all minibatches
+      for minibatch in data.generate_minibatches(x_train, t_train, batch_size):
+      	x, t = minibatch
+        # loss, accuracy = test(model, x, t)  # performs forward propagation
+        y, deltas = model(x, t)
+        
+        model.backward()
+        
+      y_labels, loss = model(x_val, t_val)
+    	accuracy = np.mean(np.argmax(y_labels, axis=1) == np.argmax(t_val, axis=1))
 
-    model = NeuralNetwork(config=config)
-    for epoch in config["epochs"]:
-
-        shuffled_indices = np.random.permutation(N)
-        x_train = x_train[shuffled_indices]
-        t_train = t_train[shuffled_indices]
-
-        minibatch_loss = []  # saves the loss over all minibatches
-        minibatch_acc = []  # saves the accuracy over all minibatches
-        for minibatch in data.generate_minibatches(x_train, t_train, batch_size=config["batch_size"]):
-            x, t = minibatch
-            loss, accuracy = test(model, x, t)  # performs forward propagation
-
-            minibatch_loss.append(loss)
-            minibatch_acc.append(accuracy)
-
-            model.backward()
+      minibatch_loss.append(loss)
+      minibatch_acc.append(accuracy)
+      
+      train_los, train_ac = test(model, x_train, t_train)
+      train_acc.append(train_ac)
+      train_loss.append(train_los)
+      
+      val_los, val_ac = test(model, x_val, t_val)
+      val_acc.append(val_ac)
+      val_loss.append(val_los)
+      
+      if loss > recent_loss:
+        if count == 0:
+          best_model = copy.deepcopy(model)
+        count += 1
+        if count == patience:
+        	break
+      else:
+        count = 0
+        recent_loss = loss
+      
+      # if there is no early stopping
+      best_model = copy.deepcopy(model)
 
     # return train_acc, val_acc, train_loss, val_loss, best_model
-    raise NotImplementedError('Train not implemented')
-
+    return train_acc, val_acc, train_loss, val_loss, best_model
 
 def test(model, x_test, t_test):
     """
