@@ -172,10 +172,14 @@ class Layer:
 
         return self.d_x
 
-    def update_weights(self, learning_rate, momentum=None):
+    def update_weights(self, learning_rate, momentum=None, regularization=None):
         if momentum != None:
             pass
-
+        
+        if len(regularization) > 1:
+            lamb = regularization[1]
+            m = regularization[2]
+            self.d_w += (lamb / 2*m) * np.square(self.w)
         self.w += learning_rate * self.d_w
         self.b += learning_rate * self.d_b
 
@@ -190,7 +194,7 @@ class NeuralNetwork:
         >>> net.backward()
     """
 
-    def __init__(self, config):
+    def __init__(self, config, regularization = None):
         """
         Create the Neural Network using config.
         """
@@ -200,10 +204,14 @@ class NeuralNetwork:
         self.targets = None  # Save the targets in forward in this variable
         self.loss = None  # cross entropy performed on
         self.delta_k = None  # output layer delta
+        self.m = None
+        self.regularization = regularization
+        
 
         self.config = config
         self.learning_rate = self.config['learning_rate']
-
+        self.lamb = self.config['L2_penalty']
+        
         # Add layers specified by layer_specs.
         for i in range(len(config['layer_specs']) - 1):
             self.layers.append(
@@ -215,6 +223,7 @@ class NeuralNetwork:
         """
         Make NeuralNetwork callable.
         """
+        self.m = targets.shape[1]
         return self.forward(x, targets)
 
     def forward(self, x, targets=None):
@@ -258,7 +267,10 @@ class NeuralNetwork:
 
         # update weights
         for layer in self.layers[::-2]:
-            layer.update_weights(self.learning_rate)
+            if self.regularization:
+                layer.update_weights(self.learning_rate, regularization = (self.lamb, self.m)
+            else:
+                layer.update_weights(self.learning_rate)
 
     def softmax(self, a):
         """
