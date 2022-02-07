@@ -238,7 +238,7 @@ class NeuralNetwork:
 
         if not isinstance(targets, type(None)):
             self.targets = targets
-            self.loss = self.cross_entropy(self.y, self.targets)
+            _, self.loss = self.cross_entropy(self.y, self.targets)
             self.delta_k = self.targets - \
                 data.one_hot_encoding(np.argmax(self.y, axis=1))
 
