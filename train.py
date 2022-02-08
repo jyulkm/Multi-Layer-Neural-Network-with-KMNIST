@@ -44,6 +44,8 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
     # Keeping track of the recent loss for early stopping
     recent_loss = float('inf')
 
+    lowest_loss = float('inf')
+
     # Checking if a regularization experiment is being run. Defines the model
     if experiment['type'] == 'regularization':
         model = NeuralNetwork(config=config, reg=True, reg_type=experiment['reg_type'])
@@ -75,6 +77,11 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
         val_acc.append(val_ac)
         val_loss.append(val_los)
 
+        # For getting the model that has the lowest loss on the validation data
+        if val_los < lowest_loss:
+            lowest_loss = val_los
+            best_model = copy.deepcopy(model)
+
         # Checking validation loss for early stopping
         if val_los > recent_loss:
             count += 1
@@ -82,10 +89,9 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
                 break
         else:
             count = 0
-            best_model = model
             recent_loss = val_los
 
-    return train_acc, val_acc, train_loss, val_loss, model
+    return train_acc, val_acc, train_loss, val_loss, best_model
     
 def test(model, x_test, t_test):
     """
@@ -253,7 +259,7 @@ def regularization_experiment(x_train, t_train, x_val, t_val, x_test, t_test, co
     """
 
     # Specify experiment details
-    exp = {'type': 'regularization', 'reg_type': 'L1'}
+    exp = {'type': 'regularization', 'reg_type': 'L2'}
 
     # Train the model
     train_acc, valid_acc, train_loss, valid_loss, best_model = \
