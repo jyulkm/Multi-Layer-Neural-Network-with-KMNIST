@@ -28,14 +28,23 @@ Test Accuracy 0.8457
 Train Accuracy 0.9611881868131869
 Val Accuracy 0.9182921245421247
 
-< Regularization >
-Config: {'layer_specs': [784, 128, 10], 'activation': 'ReLU', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 110, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
-Test Loss 0.5642152998842986
-Train Loss 0.10431904616640886
-Val Loss 0.2405300525416928
-Test Accuracy 0.8654
-Train Accuracy 0.9739895833333334
-Val Accuracy 0.9299953703703703
+< L2 Regularization >
+Config: {'layer_specs': [784, 128, 10], 'activation': 'tanh', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 110, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
+Test Loss 0.5960031434205417
+Train Loss 0.13787604826811492
+Val Loss 0.27875432743667306
+Test Accuracy 0.8401
+Train Accuracy 0.9684066358024692
+Val Accuracy 0.9163611111111111
+
+< L1 Regularization >
+Config: {'layer_specs': [784, 128, 10], 'activation': 'tanh', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 110, 'early_stop': False, 'early_stop_epoch': 5, 'L1_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
+Test Loss 0.5955704295009874
+Train Loss 0.1426242730458965
+Val Loss 0.2866012085414047
+Test Accuracy 0.8387
+Train Accuracy 0.9670240384615384
+Val Accuracy 0.9164038461538462
 
 < Using ReLU activation >
 Config: {'layer_specs': [784, 128, 10], 'activation': 'ReLU', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 100, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
