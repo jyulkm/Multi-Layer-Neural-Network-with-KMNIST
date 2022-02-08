@@ -15,7 +15,6 @@ class Activation:
     """
     The class implements different types of activation functions for
     your neural network layers.
-
     Example (for sigmoid):
         >>> sigmoid_layer = Activation("sigmoid")
         >>> z = sigmoid_layer(a)
@@ -120,7 +119,6 @@ class Activation:
 class Layer:
     """
     This class implements Fully Connected layers for your neural network.
-
     Example:
         >>> fully_connected_layer = Layer(1024, 100)
         >>> output = fully_connected_layer(input)
@@ -172,14 +170,10 @@ class Layer:
 
         return self.d_x
 
-    def update_weights(self, learning_rate, momentum=None, regularization=None):
+    def update_weights(self, learning_rate, momentum=None):
         if momentum != None:
             pass
-        
-        if len(regularization) > 1:
-            lamb = regularization[1]
-            m = regularization[2]
-            self.d_w += (lamb / 2*m) * np.square(self.w)
+
         self.w += learning_rate * self.d_w
         self.b += learning_rate * self.d_b
 
@@ -187,14 +181,13 @@ class Layer:
 class NeuralNetwork:
     """
     Create a Neural Network specified by the input configuration.
-
     Example:
         >>> net = NeuralNetwork(config)
         >>> output = net(input)
         >>> net.backward()
     """
 
-    def __init__(self, config, regularization = None):
+    def __init__(self, config, regularization = None, l_type = None):
         """
         Create the Neural Network using config.
         """
@@ -206,11 +199,11 @@ class NeuralNetwork:
         self.delta_k = None  # output layer delta
         self.m = None
         self.regularization = regularization
-        
+        self.l_type = l_type
 
         self.config = config
         self.learning_rate = self.config['learning_rate']
-        self.lamb = self.config['L2_penalty']
+        self.lambd = self.config['L2_penalty']
         
         # Add layers specified by layer_specs.
         for i in range(len(config['layer_specs']) - 1):
@@ -223,7 +216,7 @@ class NeuralNetwork:
         """
         Make NeuralNetwork callable.
         """
-        self.m = targets.shape[1]
+        self.m = targets.shape[0]
         return self.forward(x, targets)
 
     def forward(self, x, targets=None):
@@ -267,10 +260,7 @@ class NeuralNetwork:
 
         # update weights
         for layer in self.layers[::-2]:
-            if self.regularization:
-                layer.update_weights(self.learning_rate, regularization = (self.lamb, self.m)
-            else:
-                layer.update_weights(self.learning_rate)
+            layer.update_weights(self.learning_rate)
 
     def softmax(self, a):
         """
@@ -290,16 +280,17 @@ class NeuralNetwork:
             The network's predictions
         t
             The corresponding targets
-        Returns
+        Returns q
         -------
         float 
             multiclass cross entropy loss value according to above definition
         """
+        avg_loss = (-1) * np.mean(np.sum(np.multiply(targets,np.log(logits))))
 
-        # Calculates average loss over n training examples
-        avg_loss_n = (-1) * np.mean(np.sum(np.multiply(t,np.log(y)), axis=1))
+        if self.regularization:
+            if self.l_type == 'L2':
+                avg_loss += self.lambd * np.sum(self.w)
+            else: 
+                avg_loss += self.lambd * np.sum(np.sign(self.w))
 
-        # Calculates average loss over c categories
-        avg_loss_c = (-1) * np.mean(np.sum(np.multiply(t,np.log(y)), axis=0))
-
-        return avg_loss_n,avg_loss_c
+        return avg_loss
