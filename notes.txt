@@ -1,0 +1,69 @@
+------------------ Best Model ------------------
+
+Config: {'layer_specs': [784, 512, 10], 'activation': 'ReLU', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 110, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
+Test Loss 0.4780028686902232
+Train Loss 0.07173221902856
+Val Loss 0.20978005942091485
+Test Accuracy 0.8818
+Train Accuracy 0.9838125
+Val Accuracy 0.9422125000000001
+
+------------------ Baseline Model ------------------
+
+Config: {'layer_specs': [784, 128, 10], 'activation': 'tanh', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 100, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
+Test Loss 0.5869019981146224
+Train Loss 0.14380592622231433
+Val Loss 0.29712454823679596
+Test Accuracy 0.8412
+Train Accuracy 0.9659375
+Val Accuracy 0.9132766666666667
+
+------------------ Other Models ------------------
+Config: {'layer_specs': [784, 128, 10], 'activation': 'sigmoid', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 100, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
+Test Loss 0.5619827584899455
+Train Loss 0.15853909829971524
+Val Loss 0.28417266136261715
+Test Accuracy 0.8457
+Train Accuracy 0.9611881868131869
+Val Accuracy 0.9182921245421247
+
+Config: {'layer_specs': [784, 128, 10], 'activation': 'ReLU', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 110, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
+Test Loss 0.5642152998842986
+Train Loss 0.10431904616640886
+Val Loss 0.2405300525416928
+Test Accuracy 0.8654
+Train Accuracy 0.9739895833333334
+Val Accuracy 0.9299953703703703
+
+Config: {'layer_specs': [784, 128, 10], 'activation': 'ReLU', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 100, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
+Test Loss 0.5455198452418116
+Train Loss 0.10311854650254672
+Val Loss 0.2326926844785528
+Test Accuracy 0.8665
+Train Accuracy 0.973662037037037
+Val Accuracy 0.93225
+
+Config: {'layer_specs': [784, 110, 110, 10], 'activation': 'ReLU', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 110, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
+Test Loss 0.6010664659699809
+Train Loss 0.10949249504305478
+Val Loss 0.24111157623136797
+Test Accuracy 0.8579
+Train Accuracy 0.9693732638888891
+Val Accuracy 0.9294305555555556
+
+Config: {'layer_specs': [784, 384, 10], 'activation': 'ReLU', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 110, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
+Test Loss 0.4806679031096464
+Train Loss 0.07955915382235863
+Val Loss 0.21671867391161914
+Test Accuracy 0.879
+Train Accuracy 0.9810590277777776
+Val Accuracy 0.9392638888888888
+
+Config: {'layer_specs': [784, 256, 10], 'activation': 'ReLU', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 110, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
+Test Loss 0.5116726856170553
+Train Loss 0.08973573787226508
+Val Loss 0.21901963077175673
+Test Accuracy 0.8737
+Train Accuracy 0.9784154411764706
+Val Accuracy 0.9396029411764706
+
