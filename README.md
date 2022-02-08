@@ -1,6 +1,6 @@
 # CSE151B PA2
 
-Details on each Python file:
+### Details on each Python file
 
 The data.py file contains helper functions for one hot encoding, normalizing, and generating the minibatches we use in performing mini-batch stochastic gradient descent.
 
@@ -17,4 +17,6 @@ Lastly, the main.py file takes in arguments from the command line. Available arg
 
 The main.py file is also where we load in the data, split the data into train/test/validaiton, normalize the inputs, and one-hot encode the targets. It will then run the network based on the arguments passed in the command line.
 
-Example command: 'python main.py --train_mlp'.
+> **_Example command:_** 'python main.py --train_mlp'.
+
+> **_NOTE:_** For regularization, it will run L2. If you want it to do L1 regularization, add 'L1_penalty: [insert penalty]' to the config,yaml file and change the value in the dictionary at the top of the 'regularization_experiment' function in train.py from 'L2' to 'L1'.
