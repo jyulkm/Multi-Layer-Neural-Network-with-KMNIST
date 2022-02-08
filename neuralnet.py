@@ -108,12 +108,7 @@ class Activation:
         """
         Compute the gradient for ReLU here.
         """
-        if self.a < 0:
-            return 0
-        if self.a > 0:
-            return 1
-        if self.a == 0:
-            return 0  # following the convention of returning 1 only if x > 0
+        return (self.a > 0).astype(int)
 
 
 class Layer:

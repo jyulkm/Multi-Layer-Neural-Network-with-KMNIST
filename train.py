@@ -131,7 +131,20 @@ def activation_experiment(x_train, t_train, x_val, t_val, x_test, t_test, config
     """
     This function tests all the different activation functions available and then plots their performances.
     """
-    raise NotImplementedError('Activation Experiment not implemented')
+    exp = {'type': None}
+
+    train_acc, valid_acc, train_loss, valid_loss, best_model = \
+        train(x_train, t_train, x_val, t_val, config, experiment=exp)
+
+    test_loss, test_acc = test(best_model, x_test, t_test)
+
+    print("Config: %r" % config)
+    print("Test Loss", test_loss / x_test.shape[0])
+    print("Train Loss", np.mean(train_loss) / x_train.shape[0])
+    print("Val Loss", np.mean(valid_loss) / x_val.shape[0])
+    print("Test Accuracy", test_acc)
+    print("Train Accuracy", np.mean(train_acc))
+    print("Val Accuracy", np.mean(valid_acc))
 
 
 def topology_experiment(x_train, t_train, x_val, t_val, x_test, t_test, config):
@@ -143,7 +156,20 @@ def topology_experiment(x_train, t_train, x_val, t_val, x_test, t_test, config):
     number of parameters roughly equal to the number of parameters of the best performing
     model previously.
     """
-    raise NotImplementedError('Topology Experiment not implemented')
+    exp = {'type': None}
+
+    train_acc, valid_acc, train_loss, valid_loss, best_model = \
+        train(x_train, t_train, x_val, t_val, config, experiment=exp)
+
+    test_loss, test_acc = test(best_model, x_test, t_test)
+
+    print("Config: %r" % config)
+    print("Test Loss", test_loss / x_test.shape[0])
+    print("Train Loss", np.mean(train_loss) / x_train.shape[0])
+    print("Val Loss", np.mean(valid_loss) / x_val.shape[0])
+    print("Test Accuracy", test_acc)
+    print("Train Accuracy", np.mean(train_acc))
+    print("Val Accuracy", np.mean(valid_acc))
 
 
 def regularization_experiment(x_train, t_train, x_val, t_val, x_test, t_test, config):
