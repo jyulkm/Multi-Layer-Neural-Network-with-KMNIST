@@ -162,15 +162,21 @@ class Layer:
 
         return self.a
 
-    def backward(self, delta):
+    def backward(self, delta, reg=False, reg_type=None, reg_penalty=None):
         """
         Takes an array of deltas from the layer above it as input.
         Computes gradient for its weights and the delta to pass to its previous layers.
         Return self.d_x
         """
-        #assert (delta.shape==tuple([48000, 10])) | (delta.shape==tuple([48000, 128])), "The deltas must be of shape (48000, 10)"
+        if reg:
+            if reg_type == 'L2':
+                self.d_w = self.x.T @ delta + 2 * reg_penalty * self.w
 
-        self.d_w = self.x.T @ delta
+            if reg_type == 'L1':
+                self.d_w = self.x.T @ delta + reg_penalty * np.sign(self.w)
+
+        else:
+            self.d_w = self.x.T @ delta
 
         self.d_x = delta @ self.w.T
 
@@ -197,10 +203,11 @@ class NeuralNetwork:
         >>> net.backward()
     """
 
-    def __init__(self, config):
+    def __init__(self, config, reg=False, reg_type=None):
         """
         Create the Neural Network using config.
         """
+        assert (reg_type == 'L2') | (reg_type == 'L1') | (reg_type == None), "Regularization should be L1 or L2"
         self.layers = []  # Store all layers in this list.
         self.x = None  # Save the input to forward in this
         self.y = None  # Save the output vector of model in this
@@ -209,7 +216,13 @@ class NeuralNetwork:
 
         self.config = config
         self.learning_rate = self.config['learning_rate']
-        self.gamma = self.config['momentum_gamma']
+        self.gamma = self.config['momentum_gamma'] # momentum term
+
+        self.reg = reg # whether to perform regularization
+        self.reg_type = reg_type # type of regularization to perform
+        self.reg_penalty = None
+        if reg:
+            self.reg_penalty = self.config[reg_type + '_penalty']
 
         # Add layers specified by layer_specs.
         for i in range(len(config['layer_specs']) - 1):
@@ -266,20 +279,17 @@ class NeuralNetwork:
             - N x c the first pass
             - N x M the second pass
         '''
-        self.layers[i].backward(delta_k)
+        self.layers[i].backward(delta_k, self.reg, self.reg_type, self.reg_penalty)
 
-        # self.layers[i].b += self.learning_rate * self.layers[i].d_b / delta_k.shape[0]
         self.layers[i].update_weights(self.learning_rate, self.gamma)
 
         # activation backward
-        # i = 2, hidden to output layer
         if i > 0:
             weighted_sum_delta = self.layers[i].d_x
             delta_j = self.layers[i-1].backward(weighted_sum_delta)
-            # print(weighted_sum_delta.shape)
-            # print(delta_j.shape)
 
             return self.backward_recur(i-2, delta_j)
+        
         return self.layers[i].d_w
 
     def softmax(self, a):
@@ -294,5 +304,17 @@ class NeuralNetwork:
         """
         Compute the categorical cross-entropy loss and return it.
         """
+        if self.reg:
+            reg_sum = 0
+            for i in range(0, len(self.layers), 2):
+                if self.reg_type == 'L1':
+                    reg_sum += np.sum(np.abs(self.layers[i].w))
+                if self.reg_type == 'L2':
+                    reg_sum += np.sum(np.square(self.layers[i].w))
 
-        return -1 * np.sum(targets * np.log(logits))
+
+            return -1 * np.sum(targets * np.log(logits)) + self.reg_penalty * reg_sum
+
+        else:
+            return -1 * np.sum(targets * np.log(logits))
+
