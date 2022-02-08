@@ -11,7 +11,6 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
     """
     Train your model here using batch stochastic gradient descent and early stopping. Use config to set parameters
     for training like learning rate, momentum, etc.
-
     Args:
         x_train: The train patterns
         t_train: The train labels
@@ -19,7 +18,6 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
         t_val: The validation set labels
         config: The configs as specified in config.yaml
         experiment: An optional dict parameter for you to specify which experiment you want to run in train.
-
     Returns:
         5 things:
             training and validation loss and accuracies - 1D arrays of loss and accuracy values per epoch.
@@ -30,73 +28,40 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
     train_loss = []
     val_loss = []
     best_model = None
-    # With momentum: v(t)=alpha*v(t-1)-epsilon*dW(t), w = w + v(t)
-    
-    batch_size = config['batch_size']
-    epochs = config['epochs']
-    early_stop_bool = config['early_stop']
-    gamma = config['momentum_gamma']
-    L2 = config['L2_penalty']
-    
-    patience = 5 # number of epochs to wait till early stopping if validation error continues to go up
-    recent_loss = float('inf')
-    
+    l_type = config['L_type']
+
+    N = len(x_train)  # number of examples
     if experiment == 'regularization':
-      model = NeuralNetwork(config=config, regularization = True)
+        model = NeuralNetwork(config=config, regularization=True, l_type = l_type)
     else:
-    	model = NeuralNetwork(config=config)
-    
-    for e in epochs:
-      count = 0
+        model = NeuralNetwork(config=config)
+    for epoch in config["epochs"]:
 
-      minibatch_loss = []  # saves the loss over all minibatches
-      minibatch_acc = []  # saves the accuracy over all minibatches
-      for minibatch in data.generate_minibatches(x_train, t_train, batch_size):
-      	x, t = minibatch
-        # loss, accuracy = test(model, x, t)  # performs forward propagation
-        y, deltas = model(x, t)
-        
-        model.backward()
-        
-      y_labels, loss = model(x_val, t_val)
-    	accuracy = np.mean(np.argmax(y_labels, axis=1) == np.argmax(t_val, axis=1))
+        shuffled_indices = np.random.permutation(N)
+        x_train = x_train[shuffled_indices]
+        t_train = t_train[shuffled_indices]
 
-      minibatch_loss.append(loss)
-      minibatch_acc.append(accuracy)
-      
-      train_los, train_ac = test(model, x_train, t_train)
-      train_acc.append(train_ac)
-      train_loss.append(train_los)
-      
-      val_los, val_ac = test(model, x_val, t_val)
-      val_acc.append(val_ac)
-      val_loss.append(val_los)
-      
-      if loss > recent_loss:
-        if count == 0:
-          best_model = copy.deepcopy(model)
-        count += 1
-        if count == patience:
-        	break
-      else:
-        count = 0
-        recent_loss = loss
-      
-      # if there is no early stopping
-      best_model = copy.deepcopy(model)
+        minibatch_loss = []  # saves the loss over all minibatches
+        minibatch_acc = []  # saves the accuracy over all minibatches
+        for minibatch in data.generate_minibatches(x_train, t_train, batch_size=config["batch_size"]):
+            x, t = minibatch
+            loss, accuracy = test(model, x, t)  # performs forward propagation
 
-    # return train_acc, val_acc, train_loss, val_loss, best_model
+            minibatch_loss.append(loss)
+            minibatch_acc.append(accuracy)
+
+            model.backward()
+
     return train_acc, val_acc, train_loss, val_loss, best_model
+
 
 def test(model, x_test, t_test):
     """
     Does a forward pass on the model and returns loss and accuracy on the test set.
-
     Args:
         model: The trained model to run a forward pass on.
         x_test: The test patterns.
         y_test: The test labels.
-
     Returns:
         Loss, Test accuracy
     """
@@ -110,7 +75,6 @@ def test(model, x_test, t_test):
 def train_mlp(x_train, t_train, x_val, t_val, x_test, t_test, config):
     """
     This function trains a single multi-layer perceptron and plots its performances.
-
     NOTE: For this function and any of the experiments, feel free to come up with your own ways of saving data
             (i.e. plots, performances, etc.). A recommendation is to save this function's data and each experiment's
             data into separate folders, but this part is up to you.
@@ -143,7 +107,6 @@ def topology_experiment(x_train, t_train, x_val, t_val, x_test, t_test, config):
     """
     This function tests performance of various network topologies, i.e. making
     the graph narrower and wider by halving and doubling the number of hidden units.
-
     Then, we change number of hidden layers to 2 of equal size instead of 1, and keep
     number of parameters roughly equal to the number of parameters of the best performing
     model previously.
@@ -155,6 +118,9 @@ def regularization_experiment(x_train, t_train, x_val, t_val, x_test, t_test, co
     """
     This function tests the neural network with regularization.
     """
+    train_acc, val_acc, train_loss, val_loss, best_model = train(x_train, t_train, x_val, t_val, 
+    config, experiment='regularization')
+
     raise NotImplementedError('Regularization Experiment not implemented')
 
 # compares this gradient with the math formula
