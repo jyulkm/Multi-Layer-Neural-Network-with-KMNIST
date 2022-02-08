@@ -180,10 +180,16 @@ class Layer:
         return self.d_x
 
     def update_weights(self, alpha, gamma):
+        """
+        Update the weight matrix and bias vector using momemntum.
+        Just updating values, so no need to return anything.
+        """
         momentum_w = gamma * self.d_w + ((1 - gamma) * self.prev_w)
         momentum_b = gamma * self.d_b + ((1 - gamma) * self.prev_b)
+
         self.prev_w = momentum_w
         self.prev_b = momentum_b
+
         self.w = self.w + alpha * momentum_w
         self.b = self.b + alpha * momentum_b
 
@@ -253,8 +259,8 @@ class NeuralNetwork:
 
         if self.targets is not None:
             # implement using the cross entropy function below
-            self.loss = self.targets - self.y
-            return self.y, self.cross_entropy(self.y, self.targets)
+            self.loss = self.cross_entropy(self.y, self.targets)
+            return self.y, self.loss
 
         return self.y
 
@@ -269,11 +275,11 @@ class NeuralNetwork:
         return self.backward_recur(i, delta_k)
 
     def backward_recur(self, i, delta_k):
-        '''
-        Delta is the right shape:
-            - N x c the first pass
-            - N x M the second pass
-        '''
+        """
+        Revursively backpropagate through the layers.
+        Compute hidden layer delta by calling the backward function 
+        of the Activation for the hidden layer.
+        """
         self.layers[i].backward(delta_k, self.reg, self.reg_type, self.reg_penalty)
 
         self.layers[i].update_weights(self.learning_rate, self.gamma)
@@ -292,7 +298,6 @@ class NeuralNetwork:
         Implement the softmax function here.
         Remember to take care of the overflow condition.
         """
-        #assert a.shape==tuple([48000, 10]), "Input matrix must be of shape (48000, 10)"
         return (np.exp(a).T / np.sum(np.exp(a),axis=1)).T
 
     def cross_entropy(self, logits, targets):

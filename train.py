@@ -50,20 +50,12 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
     count = 0
     for e in range(epochs):
 
-      # minibatch_loss = []  # saves the loss over all minibatches
-      # minibatch_acc = []  # saves the accuracy over all minibatches
       for minibatch in data.generate_minibatches(x_train, t_train, batch_size):
         x, t = minibatch
 
         y, deltas = model(x, t)
         
         model.backward()
-        
-      # y_labels, loss = model(x_val, t_val)
-      # accuracy = np.mean(np.argmax(y_labels, axis=1) == np.argmax(t_val, axis=1))
-
-      # minibatch_loss.append(loss)
-      # minibatch_acc.append(accuracy)
       
       train_los, train_ac = test(model, x_train, t_train)
       train_acc.append(train_ac)
@@ -113,6 +105,22 @@ def train_mlp(x_train, t_train, x_val, t_val, x_test, t_test, config):
 
     test_loss, test_acc = test(best_model, x_test, t_test)
 
+    plt.scatter(np.arange(len(train_loss)),np.array(train_loss) / x_train.shape[0],c='blue')
+    plt.scatter(np.arange(len(valid_loss)),np.array(valid_loss) / x_val.shape[0],c='purple')
+    plt.legend(['Training loss', 'Validation Loss'])
+    plt.title('Baseline Model Loss vs. Number of Epochs')
+    plt.ylabel('Baseline Model Loss')
+    plt.xlabel('Number of Epochs')
+    plt.show()
+
+    plt.scatter(np.arange(len(train_acc)), train_acc, c='blue')
+    plt.scatter(np.arange(len(valid_acc)), valid_acc, c='purple')
+    plt.legend(['Training Accuracy', 'Validation Accuracy'])
+    plt.title('Baseline Model Accuracy vs. Number of Epochs')
+    plt.ylabel('Baseline Model Accuracy')
+    plt.xlabel('Number of Epochs')
+    plt.show()
+
     print("Config: %r" % config)
     print("Test Loss", test_loss / x_test.shape[0])
     print("Train Loss", np.mean(train_loss) / x_train.shape[0])
@@ -120,6 +128,13 @@ def train_mlp(x_train, t_train, x_val, t_val, x_test, t_test, config):
     print("Test Accuracy", test_acc)
     print("Train Accuracy", np.mean(train_acc))
     print("Val Accuracy", np.mean(valid_acc))
+
+    train_loss = np.mean(train_loss) / x_train.shape[0]
+    valid_loss = np.mean(valid_loss) / x_val.shape[0]
+    test_loss = test_loss / x_test.shape[0]
+
+    train_acc = np.mean(train_acc)
+    valid_acc = np.mean(valid_acc)
 
     # DO NOT modify the code below.
     data = {'train_loss': train_loss, 'val_loss': valid_loss, 'train_acc': train_acc, 'val_acc': valid_acc,
