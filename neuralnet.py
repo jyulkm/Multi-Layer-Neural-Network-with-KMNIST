@@ -138,7 +138,7 @@ class Layer:
         self.d_b = None  # Save the gradient w.r.t b in this
 
         self.prev_w = 0 # For updating weights using momentum
-        self.prev_b = 0
+        self.prev_b = 0 # For updating biases using momentum
 
     def __call__(self, x):
         """
@@ -163,18 +163,20 @@ class Layer:
         Computes gradient for its weights and the delta to pass to its previous layers.
         Return self.d_x
         """
+
+        # Checking if we're using regularization and calculating the gradient
         if reg:
             if reg_type == 'L2':
-                self.d_w = self.x.T @ delta + 2 * reg_penalty * self.w
+                self.d_w = self.x.T @ delta + 2 * reg_penalty * self.w # L2
 
             if reg_type == 'L1':
-                self.d_w = self.x.T @ delta + reg_penalty * np.sign(self.w)
+                self.d_w = self.x.T @ delta + reg_penalty * np.sign(self.w) # L1
 
         else:
             self.d_w = self.x.T @ delta
 
+        # Dx and Db are the same whether we do regularization or not
         self.d_x = delta @ self.w.T
-
         self.d_b = np.sum(delta.T, axis=1)
 
         return self.d_x
@@ -184,12 +186,16 @@ class Layer:
         Update the weight matrix and bias vector using momemntum.
         Just updating values, so no need to return anything.
         """
+
+        # Calculating the gradient with momentum
         momentum_w = gamma * self.d_w + ((1 - gamma) * self.prev_w)
         momentum_b = gamma * self.d_b + ((1 - gamma) * self.prev_b)
 
+        # Setting the current gradients as the class' previous gradient
         self.prev_w = momentum_w
         self.prev_b = momentum_b
 
+        # Updating the weights
         self.w = self.w + alpha * momentum_w
         self.b = self.b + alpha * momentum_b
 
@@ -247,19 +253,28 @@ class NeuralNetwork:
         self.x = x
         self.targets = targets
 
+        # Forward pass through the layers
         z = self.x
         for i in range(0, len(self.layers), 2):
-            # example of self.layers: [layer1, activation, layer2]
+
+            # Calculating a to pass to the activation function
             a = self.layers[i](z)
+
+            # Making sure we're not in the hidden to output layer
             if (i + 1) < len(self.layers):
                 z = self.layers[i+1](a)
 
+        # Protection from overflow/NaN values
         a_protect = a - np.max(a)
+
+        # Calculating output using softmax
         self.y = self.softmax(a_protect)
 
         if self.targets is not None:
-            # implement using the cross entropy function below
+
+            # Calculate the multiclass cross entropy loss
             self.loss = self.cross_entropy(self.y, self.targets)
+
             return self.y, self.loss
 
         return self.y
@@ -270,8 +285,11 @@ class NeuralNetwork:
         Call backward methods of individual layer's.
         """
         i = len(self.layers) - 1
+
+        # Deltas for the hidden layer
         delta_k = self.targets - self.y
 
+        # Recursively call helper function to backpropagate through network
         return self.backward_recur(i, delta_k)
 
     def backward_recur(self, i, delta_k):
@@ -280,11 +298,14 @@ class NeuralNetwork:
         Compute hidden layer delta by calling the backward function 
         of the Activation for the hidden layer.
         """
+
+        # Calling backward function of Layer to calculate gradients
         self.layers[i].backward(delta_k, self.reg, self.reg_type, self.reg_penalty)
 
+        # Updating the weight and bias terms
         self.layers[i].update_weights(self.learning_rate, self.gamma)
 
-        # activation backward
+        # Activation backward to get the deltas from the hidden layers
         if i > 0:
             weighted_sum_delta = self.layers[i].d_x
             delta_j = self.layers[i-1].backward(weighted_sum_delta)
@@ -304,7 +325,11 @@ class NeuralNetwork:
         """
         Compute the categorical cross-entropy loss and return it.
         """
+
+        # Checking for regularization
         if self.reg:
+
+            # Computing the regularization summation
             reg_sum = 0
             for i in range(0, len(self.layers), 2):
                 if self.reg_type == 'L1':
