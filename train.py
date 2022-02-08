@@ -181,6 +181,22 @@ def topology_experiment(x_train, t_train, x_val, t_val, x_test, t_test, config):
 
     test_loss, test_acc = test(best_model, x_test, t_test)
 
+    plt.scatter(np.arange(len(train_loss)),np.array(train_loss) / x_train.shape[0],c='blue')
+    plt.scatter(np.arange(len(valid_loss)),np.array(valid_loss) / x_val.shape[0],c='purple')
+    plt.legend(['Training loss', 'Validation Loss'])
+    plt.title('Loss vs. Number of Epochs (2 hidden layers)')
+    plt.ylabel(config['activation'].capitalize()+' Loss')
+    plt.xlabel('Number of Epochs')
+    plt.show()
+
+    plt.scatter(np.arange(len(train_acc)), train_acc, c='blue')
+    plt.scatter(np.arange(len(valid_acc)), valid_acc, c='purple')
+    plt.legend(['Training Accuracy', 'Validation Accuracy'])
+    plt.title('Accuracy vs. Number of Epochs (2 hidden layers)')
+    plt.ylabel(config['activation'].capitalize()+' Accuracy')
+    plt.xlabel('Number of Epochs')
+    plt.show()
+
     print("Config: %r" % config)
     print("Test Loss", test_loss / x_test.shape[0])
     print("Train Loss", np.mean(train_loss) / x_train.shape[0])

@@ -1,8 +1,8 @@
 # This specifies the number of layers and number of hidden neurons in each layer.
-layer_specs: [784, 128, 10]
+layer_specs: [784, 512, 512, 10]
 
 # Type of non-linear activation function to be used for the layers.
-activation: "sigmoid"
+activation: "ReLU"
 
 # The learning rate to be used for training.
 learning_rate: 0.0005

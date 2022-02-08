@@ -46,30 +46,29 @@ Test Accuracy 0.8665
 Train Accuracy 0.973662037037037
 Val Accuracy 0.93225
 
-< Increasing number of hidden layers >
-Config: {'layer_specs': [784, 110, 110, 10], 'activation': 'ReLU', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 110, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
-Test Loss 0.6010664659699809
-Train Loss 0.10949249504305478
-Val Loss 0.24111157623136797
-Test Accuracy 0.8579
-Train Accuracy 0.9693732638888891
-Val Accuracy 0.9294305555555556
-
-< Increasing size of hidden layer >
-Config: {'layer_specs': [784, 384, 10], 'activation': 'ReLU', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 110, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
-Test Loss 0.4806679031096464
-Train Loss 0.07955915382235863
-Val Loss 0.21671867391161914
-Test Accuracy 0.879
-Train Accuracy 0.9810590277777776
-Val Accuracy 0.9392638888888888
-
 < Increasing size of hidden layer > 
-Config: {'layer_specs': [784, 256, 10], 'activation': 'ReLU', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 110, 'early_stop': False, 'early_stop_epoch': 5, 'L2_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
-Test Loss 0.5116726856170553
-Train Loss 0.08973573787226508
-Val Loss 0.21901963077175673
-Test Accuracy 0.8737
-Train Accuracy 0.9784154411764706
-Val Accuracy 0.9396029411764706
+Config: {'layer_specs': [784, 256, 10], 'activation': 'tanh', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 100, 'early_stop': False, 'early_stop_epoch': 5, 'L1_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
+Test Loss 0.5832455377160735
+Train Loss 0.09962444528891758
+Val Loss 0.26685520897552195
+Test Accuracy 0.851
+Train Accuracy 0.9782466397849464
+Val Accuracy 0.9208655913978495
 
+< Decreasing size of hidden layer >
+Config: {'layer_specs': [784, 64, 10], 'activation': 'tanh', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 100, 'early_stop': False, 'early_stop_epoch': 5, 'L1_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
+Test Loss 0.7005179681124971
+Train Loss 0.20870734580786082
+Val Loss 0.3590642251858428
+Test Accuracy 0.808
+Train Accuracy 0.946095238095238
+Val Accuracy 0.8945039682539685
+
+< Increasing number of hidden layers >
+Config: {'layer_specs': [784, 110, 110, 10], 'activation': 'tanh', 'learning_rate': 0.0005, 'batch_size': 128, 'epochs': 100, 'early_stop': False, 'early_stop_epoch': 5, 'L1_penalty': 0.0001, 'momentum': True, 'momentum_gamma': 0.9}
+Test Loss 0.6723467806497336
+Train Loss 0.1497236630994013
+Val Loss 0.29658440986180595
+Test Accuracy 0.8299
+Train Accuracy 0.9632009803921567
+Val Accuracy 0.9132254901960785
