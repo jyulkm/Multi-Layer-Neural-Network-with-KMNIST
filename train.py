@@ -6,6 +6,7 @@
 from data import write_to_file, z_score_normalize
 from neuralnet import *
 import copy
+import matplotlib.pyplot as plt
 
 
 def train(x_train, t_train, x_val, t_val, config, experiment=None):
@@ -49,8 +50,8 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
     count = 0
     for e in range(epochs):
 
-      minibatch_loss = []  # saves the loss over all minibatches
-      minibatch_acc = []  # saves the accuracy over all minibatches
+      # minibatch_loss = []  # saves the loss over all minibatches
+      # minibatch_acc = []  # saves the accuracy over all minibatches
       for minibatch in data.generate_minibatches(x_train, t_train, batch_size):
         x, t = minibatch
 
@@ -58,11 +59,11 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
         
         model.backward()
         
-      y_labels, loss = model(x_val, t_val)
-      accuracy = np.mean(np.argmax(y_labels, axis=1) == np.argmax(t_val, axis=1))
+      # y_labels, loss = model(x_val, t_val)
+      # accuracy = np.mean(np.argmax(y_labels, axis=1) == np.argmax(t_val, axis=1))
 
-      minibatch_loss.append(loss)
-      minibatch_acc.append(accuracy)
+      # minibatch_loss.append(loss)
+      # minibatch_acc.append(accuracy)
       
       train_los, train_ac = test(model, x_train, t_train)
       train_acc.append(train_ac)
@@ -72,14 +73,14 @@ def train(x_train, t_train, x_val, t_val, config, experiment=None):
       val_acc.append(val_ac)
       val_loss.append(val_los)
 
-      if loss > recent_loss:
+      if val_los > recent_loss:
         count += 1
         if count == patience:
             break
       else:
         count = 0
         best_model = model
-        recent_loss = loss
+        recent_loss = val_los
 
     return train_acc, val_acc, train_loss, val_loss, model
     
@@ -138,6 +139,22 @@ def activation_experiment(x_train, t_train, x_val, t_val, x_test, t_test, config
 
     test_loss, test_acc = test(best_model, x_test, t_test)
 
+    plt.scatter(np.arange(len(train_loss)),np.array(train_loss) / x_train.shape[0],c='blue')
+    plt.scatter(np.arange(len(valid_loss)),np.array(valid_loss) / x_val.shape[0],c='purple')
+    plt.legend(['Training loss', 'Validation Loss'])
+    plt.title(config['activation'].capitalize()+' Loss vs. Number of Epochs')
+    plt.ylabel(config['activation'].capitalize()+' Loss')
+    plt.xlabel('Number of Epochs')
+    plt.show()
+
+    plt.scatter(np.arange(len(train_acc)), train_acc, c='blue')
+    plt.scatter(np.arange(len(valid_acc)), valid_acc, c='purple')
+    plt.legend(['Training Accuracy', 'Validation Accuracy'])
+    plt.title(config['activation'].capitalize()+' Accuracy vs. Number of Epochs')
+    plt.ylabel(config['activation'].capitalize()+' Accuracy')
+    plt.xlabel('Number of Epochs')
+    plt.show()
+
     print("Config: %r" % config)
     print("Test Loss", test_loss / x_test.shape[0])
     print("Train Loss", np.mean(train_loss) / x_train.shape[0])
@@ -156,6 +173,7 @@ def topology_experiment(x_train, t_train, x_val, t_val, x_test, t_test, config):
     number of parameters roughly equal to the number of parameters of the best performing
     model previously.
     """
+    # Specify experiment details
     exp = {'type': None}
 
     train_acc, valid_acc, train_loss, valid_loss, best_model = \
@@ -176,12 +194,29 @@ def regularization_experiment(x_train, t_train, x_val, t_val, x_test, t_test, co
     """
     This function tests the neural network with regularization.
     """
-    exp = {'type': 'regularization', 'reg_type': 'L2'}
+    # Specify experiment details
+    exp = {'type': 'regularization', 'reg_type': 'L1'}
 
     train_acc, valid_acc, train_loss, valid_loss, best_model = \
         train(x_train, t_train, x_val, t_val, config, experiment=exp)
 
     test_loss, test_acc = test(best_model, x_test, t_test)
+
+    plt.scatter(np.arange(len(train_loss)),np.array(train_loss) / x_train.shape[0],c='blue')
+    plt.scatter(np.arange(len(valid_loss)),np.array(valid_loss) / x_val.shape[0],c='purple')
+    plt.legend(['Training loss', 'Validation Loss'])
+    plt.title('L1 Loss vs. Number of Epochs')
+    plt.ylabel('L1 Loss')
+    plt.xlabel('Number of Epochs')
+    plt.show()
+
+    plt.scatter(np.arange(len(train_acc)), train_acc, c='blue')
+    plt.scatter(np.arange(len(valid_acc)), valid_acc, c='purple')
+    plt.legend(['Training Accuracy', 'Validation Accuracy'])
+    plt.title('L1 Accuracy vs. Number of Epochs')
+    plt.ylabel('L1 Accuracy')
+    plt.xlabel('Number of Epochs')
+    plt.show()
 
     print("Config: %r" % config)
     print("Test Loss", test_loss / x_test.shape[0])
